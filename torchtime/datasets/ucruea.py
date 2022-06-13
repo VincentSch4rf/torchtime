@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..transforms import functional as F
-from .timeseries import TimeSeriesDataset
+from . import TimeSeriesDataset
 from .utils import download_and_extract_archive
 from ..exceptions import DataConversionWarning
 from ..io.arff import load_from_arff_to_dataframe

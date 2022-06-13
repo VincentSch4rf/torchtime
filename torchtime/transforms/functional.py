@@ -1,10 +1,10 @@
 import warnings
-from typing import Any, List, Sequence, Tuple, Optional, Union, Set
+from typing import Any, List, Sequence, Tuple, Optional
 
 import numpy as np
 import torch
-from torch import Tensor
 import torch.nn.functional as F
+from torch import Tensor
 
 from ..exceptions import DataConversionWarning
 from ..utils import _check_unknown
