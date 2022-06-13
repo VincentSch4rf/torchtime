@@ -67,7 +67,7 @@ def load_from_arff_to_dataframe(
                 if (
                         has_class_labels is False
                         and "@attribute" in line.lower()
-                        and ("target" or "classAttribute" in line.lower())
+                        and ("target" in line.lower() or "classAttribute" in line.lower())
                 ):
                     has_class_labels = True
                     pattern = re.compile("{([\w,]+)}")
