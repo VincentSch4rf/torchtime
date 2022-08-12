@@ -1,0 +1,19 @@
+[project]
+name = "torchtime"
+version = "0.0.1"
+authors = [
+  { name="Vincent Scharf", email="vincent.scharf@smail.inf.h-brs.de" },
+]
+description = "A PyTorch Library for Time Series Classification"
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/VincentSch4rf/torchtime"
+"Bug Tracker" = "https://github.com/VincentSch4rf/torchtime/issues"
