@@ -12,4 +12,10 @@ setup(name='torchtime',
                 'torchtime.datasets',
                 'torchtime.transforms',
                 'torchtime.models'],
+      install_requires=[
+          "typing_extensions",
+          "numpy",
+          "requests",
+          "torch"
+      ]
       zip_safe=False)
