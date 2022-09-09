@@ -118,6 +118,8 @@ __pycache__/
 
 # C extensions
 *.so
+!DWDataReaderLib.so
+!DWDataReaderLib64.so
 
 # Distribution / packaging
 .Python
