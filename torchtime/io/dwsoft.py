@@ -13,17 +13,13 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 import atexit
-import math
 import os
 import ctypes
 import platform
 import tempfile
-from decimal import Decimal
-from typing import Optional
 
 import pandas as pd
 import numpy as np
-import scipy.sparse
 import torch
 
 DLL = None  # module variable accessible to other classes
@@ -273,20 +269,21 @@ class DWChannel(ctypes.Structure):
 
     def tensor(self, sample_rate: float, duration: float):
         data, time = self.scaled()
-        step_size = np.round(sample_rate / (self.number_of_samples / (time[-1] - time[0])))
         n_samples = int(sample_rate * duration)
+        if self.number_of_samples == 1:
+            return torch.sparse_coo_tensor(torch.tensor([[0], [0]]), data, size=(n_samples, 1))
+        step_size = int(np.round(sample_rate / (self.number_of_samples / (time[-1] - time[0]))))
         idx = torch.arange(0, n_samples, step_size)
         if idx.size(0) != data.shape[0]:
             idx = idx[:-(idx.size(0) - data.shape[0])]
         idx = torch.stack((idx, torch.zeros_like(idx)), dim=0)
         tensor = torch.sparse_coo_tensor(idx, data, size=(n_samples, 1))
-        return tensor
-
+        return tensor.to_dense()
 
     def series(self):
         """Load and return timeseries of results for channel"""
         data, time = self.scaled()
-        if data.empty:
+        if data.size == 0:
             # Use average reduced data if scaled is not available
             data, time = self.reduced()['ave']
             series = pd.DataFrame(data, index=data['time_stamp'],
@@ -475,7 +472,8 @@ class DWFile(Mapping):
         self.activate()
         if not channels:
             channels = self.keys()
-        tensors = [self[k].tensor(self.info.sample_rate, self.info.duration) for k in channels]
+        tensors = [self[k].tensor(self.info.sample_rate, self.info.duration) for k in channels if
+                   self[k].number_of_samples > 1]
         return torch.stack(tensors)
 
     def close(self):
