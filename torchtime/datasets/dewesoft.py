@@ -89,22 +89,12 @@ class PatchedDEWESoftDataset(TimeSeriesDataset):
         return len(self.series)
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        if isinstance(index, slice):
-            series = []
-            dxd = None
-            for idx in range(index.start, index.stop):
-                series_idx, start_idx, stop_idx = self.patches[idx]
-                if not dxd or dxd.name != self.series_files[series_idx]:
-                    dxd = dwsoft.open(self.series_files[series_idx])
-                    tensor = dxd.tensor(channels=self.dimensions)
-                series.append(tensor[:, start_idx:stop_idx])
-            data = torch.stack(series, dim=0)
         if isinstance(index, int):
             series_idx, start_idx, stop_idx = self.patches[index]
             dxd = dwsoft.open(self.series_files[series_idx])
             data = dxd.tensor(channels=self.dimensions)[:, start_idx:stop_idx]
         else:
-            raise ValueError("index must be int or slice of ints, got {}".format(type(index)))
+            raise ValueError("index must be int, got {}".format(type(index)))
         targets = torch.tensor(self.targets[index])
         if self.transforms is not None:
             return self.transforms(data, targets)
