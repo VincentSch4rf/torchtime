@@ -474,7 +474,7 @@ class DWFile(Mapping):
             channels = self.keys()
         tensors = [self[k].tensor(self.info.sample_rate, self.info.duration) for k in channels if
                    self[k].number_of_samples > 1]
-        return torch.stack(tensors)
+        return torch.squeeze(torch.stack(tensors))
 
     def close(self):
         """Close the d7d file and delete it if temporary"""
