@@ -10,17 +10,16 @@ from ..transforms import Compose
 
 class TimeSeriesDataset(Dataset):
     """
-    Base Class For making datasets which are compatible with torchtime.
+    Base class for making datasets which are compatible with torchtime.
     It is necessary to override the ``__getitem__`` and ``__len__`` method.
 
     Args:
         root (string): Root directory of dataset.
-        transforms (callable, optional): A function/transforms that takes in
-            an image and a label and returns the transformed versions of both.
-        transform (callable, optional): A function/transform that  takes in an PIL image
-            and returns a transformed version. E.g, ``transforms.RandomCrop``
-        target_transform (callable, optional): A function/transform that takes in the
-            target and transforms it.
+        transforms (callable, optional): A function/transforms that takes in a time series and a label and returns the
+            transformed versions of both.
+        transform (callable, optional): A function/transform that  takes in a uni- or multivariate time series and
+            returns a transformed version. E.g, ``transforms.NaN2Value``
+        target_transform (callable, optional): A function/transform that takes in the target and transforms it.
 
     .. note::
 

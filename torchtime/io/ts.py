@@ -44,6 +44,8 @@ class TSFileLoader:
 
     Args:
             filepath (str): The path to the `.ts` file.
+            nan_replace_value (int, float or str, optional): The value, by which the missing value indicator "?"
+                should be replaced. Default: "NaN".
     """
 
     class State(Enum):
@@ -71,7 +73,7 @@ class TSFileLoader:
                                        TsTag.TIMESTAMPS]
 
     def as_tensor(self, return_targets: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, List[str]]]:
-        """Return the loaded data as a 3 dimensional tensor of the form (N, C, S).
+        """Return the loaded data as a 3-dimensional tensor of the form (N, C, S).
 
         Keyword Args:
             return_targets (bool):

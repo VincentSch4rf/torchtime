@@ -19,7 +19,7 @@ class Compose:
 
     Example:
         >>> transforms.Compose([
-        >>>     transforms.CenterCrop(10),
+        >>>     transforms.Nan2Value(),
         >>>     transforms.ToTensor(),
         >>> ])
 
@@ -27,13 +27,13 @@ class Compose:
         In order to script the transformations, please use ``torch.nn.Sequential`` as below.
 
         >>> transforms = torch.nn.Sequential(
-        >>>     transforms.CenterCrop(10),
+        >>>     transforms.Nan2Value(),
         >>>     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         >>> )
         >>> scripted_transforms = torch.jit.script(transforms)
 
         Make sure to use only scriptable transformations, i.e. that work with ``torch.Tensor``, does not require
-        `lambda` functions or ``numpy``.
+        `lambda` functions, ``numpy`` or ``pandas``.
 
     """
 
@@ -61,6 +61,11 @@ class Compose:
 
 
 class ToTensor:
+    """
+    Convert a numpy time series to tensor and scale the values accordingly.
+
+    This transform does not support torchscript.
+    """
     def __call__(self, ts: np.ndarray):
         if not _is_numpy(ts):
             raise TypeError('ts should be a numpy array. Got {}'.format(type(ts)))
@@ -80,24 +85,25 @@ class ToTensor:
         return self.__class__.__name__ + '()'
 
 
-class NaN2Value:
+class Nan2Value:
     """Replace NaN values in a time series by some value or its median.
 
     Args:
         value (int, float): The value NaNs should be replaced with.
-        median (bool): If True, NaN values are replaced by the median of the time series.
+        median (bool): If True, NaN values are replaced by the median of time series.
+        by_channel (bool): If True, NaN values are replaced with the channel-wise median.
     """
-    def __init__(self, value: Union[int, float] = 0, median: bool = False, by_sample_and_var: bool = False):
+    def __init__(self, value: Union[int, float] = 0, median: bool = False, by_channel: bool = False):
         self.median = median
         self.value = value
-        self.by_sample_and_var = by_sample_and_var
+        self.by_channel = by_channel
 
     def __call__(self, ts: torch.Tensor):
         """Replaces NaN values in the input time series with either some value provided by the user, or the median of
         the given time series.
 
         Args:
-            ts (Tensor): A time series as a 1 or 2 dimensional Tensor.
+            ts (Tensor): A time series as a 1 or 2-dimensional Tensor.
 
         Returns:
             Tensor: The time series with the same dimensions, containing no NaN values.
@@ -105,7 +111,7 @@ class NaN2Value:
         mask = torch.isnan(ts)
         if mask.any():
             if self.median:
-                if self.by_sample_and_var:
+                if self.by_channel:
                     median = torch.nanmedian(ts, dim=1, keepdim=True)[0].repeat(1, ts.shape[-1])
                     ts[mask] = median[mask]
                 else:
@@ -123,10 +129,9 @@ class Pad(torch.nn.Module):
 
     Args:
         series_length (int): the target length of the time series
-    Keyword Args:
         fill (float, int): fill value for `'constant'` padding. Default `0`.
         padding_mode (str): the padding mode that should be used. One of `'constant'`, `'reflect'` or `'replicate'`.
-        Default `'constant'`.
+            Default `'constant'`.
     """
 
     def __init__(self, series_length: int, fill: Union[float, int] = 0, padding_mode="constant"):
@@ -142,7 +147,7 @@ class Pad(torch.nn.Module):
         self.fill = fill
         self.padding_mode = padding_mode
 
-    def forward(self, series: Tensor):
+    def forward(self, series: Tensor) -> Tensor:
         """
         Args:
             series (Tensor): Time series to be padded.
@@ -195,36 +200,29 @@ class Normalize(torch.nn.Module):
 
 
 class Resample(torch.nn.Module):
-    """Resampler for time series. Resample time series so that they reach the
-    target size.
+    """Down/up samples the given time series to either the given :attr:`size` or by the given
+    :attr:`scale_factor`.
+
+    The algorithm used for interpolation is determined by :attr:`mode`.
+
+    The input dimensions are interpreted in the form:
+    `mini-batch x channels x width`.
+
+    The modes available for resizing are: `linear`, `bilinear`, `area`, `nearest-exact`.
 
     Args:
-        size (int or Tuple[int] or Tuple[int, int] or Tuple[int, int, int]):
-            output spatial size.
-        scale_factor (float or Tuple[float]): multiplier for spatial size. If `scale_factor` is a tuple,
-            its length has to match `input.dim()`.
+        sz (int):
+            output temporal size.
+        scale_factor (float): multiplier for temporal size.
         mode (str): algorithm used for upsampling:
-            ``'nearest'`` | ``'linear'`` | ``'bilinear'`` | ``'bicubic'`` |
-            ``'trilinear'`` | ``'area'``. Default: ``'nearest'``
-        align_corners (bool, optional): Geometrically, we consider the pixels of the
-            input and output as squares rather than points.
-            If set to ``True``, the input and output tensors are aligned by the
-            center points of their corner pixels, preserving the values at the corner pixels.
-            If set to ``False``, the input and output tensors are aligned by the corner
-            points of their corner pixels, and the interpolation uses edge value padding
-            for out-of-boundary values, making this operation *independent* of input size
-            when :attr:`scale_factor` is kept the same. This only has an effect when :attr:`mode`
-            is ``'linear'``, ``'bilinear'``, ``'bicubic'`` or ``'trilinear'``.
-            Default: ``False``
+            ``'linear'`` | ``'bilinear'`` | ``'nearest-exact'``. Default: ``'linear'``
     """
 
-    def __init__(self, sz: Optional[int], scale_factor: Optional[Union[int, Tuple[int,...]]], mode: str = 'nearest',
-                 align_corners: Optional[bool] = False):
+    def __init__(self, sz: Optional[int], scale_factor: Optional[float], mode: str = 'linear'):
         super(Resample, self).__init__()
         self.sz = sz
         self.scale_factor = scale_factor
         self.mode = mode
-        self.align_corners = align_corners
 
     def forward(self, ts: Tensor) -> Tensor:
         """
@@ -234,11 +232,11 @@ class Resample(torch.nn.Module):
         Returns:
             Tensor: Resampled time series.
         """
-        return torch.nn.functional.interpolate(ts, self.sz, self.scale_factor, self.mode, self.align_corners)
+        return torch.nn.functional.interpolate(ts, self.sz, self.scale_factor, self.mode)
 
     def __repr__(self):
-        return self.__class__.__name__ + '(size={},scale_factor={},mode={},align_corners={})'.format(
-            self.sz, self.scale_factor, self.mode, self.align_corners)
+        return self.__class__.__name__ + '(size={},scale_factor={},mode={})'.format(
+            self.sz, self.scale_factor, self.mode)
 
 
 class LabelEncoder:

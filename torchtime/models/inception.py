@@ -2,7 +2,7 @@ import math
 from typing import List, Optional, Any
 
 import torch
-from torch import nn, jit, Tensor
+from torch import nn, Tensor
 
 activations = {
     'relu': nn.ReLU,

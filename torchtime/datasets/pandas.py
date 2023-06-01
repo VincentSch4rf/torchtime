@@ -3,23 +3,37 @@ from typing import Optional, Callable, Tuple, Any, List, Union
 
 import numpy as np
 import pandas as pd
-import torch
 
 from .timeseries import TimeSeriesDataset
 
 
 class PandasDataset(TimeSeriesDataset):
+    """
+    Base class for creating datasets which are compatible with torchtime from ``pandas.Dataframe``.
+    
+    Args:
+        path (str): The path to the pickle file containing the ``pandas.Dataframe`` to load.
+        dataframe (pd.Dataframe): The ``pandas.Dataframe`` to load.
+        dimensions (list, optional): The columns of the ``pandas.Dataframe`` which contain the individual dimensions of
+            contained time series. If ``None`` is given, all columns are considered to hold the timer series data.
+        labels (str, optional): The column of the `pandas.Dataframe` which contains the labels. If ``None`` is given,
+            the data is assumed to have no labels.
+
+    .. note::
+
+        :attr:`path` and :attr:`dataframe` are mutually exclusive.
+    """
 
     @property
     def dim(self):
         if self.__has_dimensions:
             return len(self.dimensions)
-        return self.df.shape[1]
+        return self.data.shape[1]
 
     @property
     def classes(self):
         if self.__has_labels:
-            return self.df[self.labels].unique()
+            return self.data[self.labels].unique()
         return None
 
     def __init__(self,
@@ -27,9 +41,7 @@ class PandasDataset(TimeSeriesDataset):
                  dataframe: Optional[pd.DataFrame] = None,
                  dimensions: Optional[List[str]] = None,
                  labels: Optional[str] = None,
-                 transforms: Optional[Callable] = None,
-                 transform: Optional[Callable] = None,
-                 target_transform: Optional[Callable] = None,
+                 **kwargs
                  ):
         if path is not None:
             if dataframe is not None:
@@ -38,10 +50,10 @@ class PandasDataset(TimeSeriesDataset):
                 )
             self.path = path
             self.name = os.path.basename(path)
-            self.df = pd.read_pickle(self.path)
+            self.data = pd.read_pickle(self.path)
         else:
             self.name = "In Memory Dataframe"
-            self.df = dataframe
+            self.data = dataframe
         self.__has_labels = labels is not None
         if self.__has_labels:
             if not isinstance(labels, str):
@@ -58,17 +70,25 @@ class PandasDataset(TimeSeriesDataset):
                 )
         self.dimensions = dimensions
 
-        super(PandasDataset, self).__init__(self.name, transforms, transform, target_transform)
+        super(PandasDataset, self).__init__(self.name, **kwargs)
 
     def __len__(self):
-        return len(self.df)
+        return len(self.data)
 
     def __getitem__(self, index: Union[int, slice]) -> Tuple[Any, Any]:
+        """
+        Args:
+            index: The index of the sample to return.
+
+        Returns:
+            tuple: If :attr:`__has_labels` is ``True``, returns (series, target), where target is the index of the
+            target class. Else, returns (series, ``torch.empty``), where the empty tensor has the required shape.
+        """
         if self.__has_dimensions:
             columns = self.dimensions
         else:
-            columns = self.df.columns
-        rows = self.df.iloc[index]
+            columns = self.data.columns
+        rows = self.data.iloc[index]
         if isinstance(index, slice):
             data = np.swapaxes(np.stack([
                 np.stack(rows[columns].iloc[:, i]) for i in range(len(columns))

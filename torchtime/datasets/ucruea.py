@@ -5,33 +5,33 @@ import zipfile
 from typing import Optional, Callable, Tuple, Any, List
 from urllib.error import URLError
 
-import pytorch_lightning as pl
 import torch
-from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
 from torch import Tensor
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 
-from ..transforms import functional as F
 from . import TimeSeriesDataset
 from .utils import download_and_extract_archive
 from ..exceptions import DataConversionWarning
 from ..io.arff import load_from_arff_to_dataframe
 from ..io.ts import TSFileLoader
+from ..transforms import functional as F
 from ..utils import stack_pad
 
 
 class UCR(TimeSeriesDataset):
-    """`UEA & UCR Time Series Classification Repository <http://www.timeseriesclassification.com/>`.
+    """*UEA & UCR Time Series Classification Repository* :cite:`Dau2019UCR`.
 
     Args:
-        root (string): Root directory of dataset where ``UCR/<dataset_name>`` exist.
+        root (str): Root directory of dataset where ``UCR/<dataset_name>`` exist.
+        name (str): The name of the dataset to load from the UCR archive.
         train (bool, optional): If True, creates dataset from ``TRAIN.ts`` or ``TRAIN.arff``, otherwise from
-        ``TEST.ts`` or ``TEST.arff``.
+            ``TEST.ts`` or ``TEST.arff``.
         download (bool, optional): If true, downloads the dataset from the internet and puts it in root directory.
             If dataset is already downloaded, it is not downloaded again.
-        transforms (callable, optional): A function/transform that  takes in a uni- or multivariate time series and
+        classes (list, optional): A list containing the class labels, where the index in the list indicates the numeric
+            value it should be mapped to.
+        transform (callable, optional): A function/transform that  takes in a uni- or multivariate time series and
             returns a transformed version. E.g, ``transforms.NaN2Value``
+        target_transform (callable, optional): A function/transform that takes in the target and transforms it.
     """
 
     _repr_indent = 4
@@ -113,13 +113,11 @@ class UCR(TimeSeriesDataset):
             root: str,
             train: bool = True,
             download: bool = False,
-            transforms: Optional[Callable] = None,
-            transform: Optional[Callable] = None,
-            target_transform: Optional[Callable] = None,
-            classes: Optional[List[Any]] = None
+            classes: Optional[List[Any]] = None,
+            **kwargs
     ) -> None:
 
-        super(UCR, self).__init__(root, transforms, transform, target_transform)
+        super(UCR, self).__init__(root, **kwargs)
 
         self.name = name
         self.root = root
@@ -245,7 +243,7 @@ class UCR(TimeSeriesDataset):
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         """
         Args:
-            index (int): Index
+            index (int): The index of the sample to return.
 
         Returns:
             tuple: (series, target) where target is index of the target class.
@@ -263,73 +261,3 @@ class UCR(TimeSeriesDataset):
     def extra_repr(self) -> str:
         return "Dataset: {}\n".format(self.name) + \
                "Split: {}".format("Train" if self.train is True else "Test")
-
-
-class UCRDataModule(pl.LightningDataModule):
-    def __init__(self, name: str, root: str = '.', batch_size: int = 1, num_workers=-1):
-        self.name = name
-        self.root = root
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        # self.generator = torch.Generator().manual_seed(42)
-        super().__init__()
-
-    @property
-    def dims(self):
-        return self.train_dataset.dim
-
-    @property
-    def n_classes(self):
-        return len(self.train_dataset.classes)
-
-    def prepare_data(self) -> None:
-        """Download dataset and store on disk
-        """
-        UCR(self.name, self.root, download=True, train=True)
-        UCR(self.name, self.root, download=True, train=False)
-
-    @staticmethod
-    def _normalization_params(dataset: UCR) -> Tuple[Tensor, Tensor]:
-        loader = DataLoader(dataset, shuffle=False, num_workers=os.cpu_count() - 1)
-
-        mean = torch.zeros(dataset.channels)
-        std = torch.zeros(dataset.channels)
-        pbar = tqdm(loader)
-        pbar.set_description("Calculating mean and std")
-        for inputs, _labels in pbar:
-            for i in range(dataset.channels):
-                mean[i] += inputs[:, i, :].mean()
-                std[i] += inputs[:, i, :].std()
-        mean.div_(len(dataset))
-        std.div_(len(dataset))
-        print(mean, std)
-        return mean, std
-
-    def setup(self, stage: Optional[str] = None) -> None:
-        # ucr_train = UCRDataset(self.name, self.root, download=True, train=True)
-        # m = len(ucr_train)
-        # val_size = int(m * 0.2)
-        # train_size = m - val_size
-        # self.train_dataset, self.val_dataset = random_split(ucr_train,
-        #                                                     [train_size, val_size],
-        #                                                     generator=self.generator)
-        self.train_dataset = UCR(self.name, self.root, download=True, train=True)
-        self.test_dataset = UCR(self.name, self.root, download=True, train=False)
-
-    def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return DataLoader(self.train_dataset, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers,
-                          pin_memory=True)
-
-    def val_dataloader(self) -> EVAL_DATALOADERS:
-        return DataLoader(self.test_dataset, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers,
-                          pin_memory=True)
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        return DataLoader(self.test_dataset, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers,
-                          pin_memory=True)
-
-    def predict_dataloader(self) -> EVAL_DATALOADERS:
-        pass
-
-    def teardown(self, stage: Optional[str] = None) -> None:
-        pass
