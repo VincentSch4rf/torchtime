@@ -171,8 +171,7 @@ def _get_enum_from_fn(fn: Callable) -> Type[WeightsEnum]:
         weights_enum = ann
     else:
         # handle cases like Union[Optional, T]
-        # TODO: Replace ann.__args__ with typing.get_args(ann) after python >= 3.8
-        for t in ann.__args__:  # type: ignore[union-attr]
+        for t in typing.get_args(ann):  # type: ignore[union-attr]
             if isinstance(t, type) and issubclass(t, WeightsEnum):
                 weights_enum = t
                 break
