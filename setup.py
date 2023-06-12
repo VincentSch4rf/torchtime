@@ -132,7 +132,7 @@ def _main():
         long_description = f.read()
 
     setup(
-        name="torchtime",
+        name="pytorchtime",
         version=version,
         description="An time series package for PyTorch",
         long_description=long_description,
