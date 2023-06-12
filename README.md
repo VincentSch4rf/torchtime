@@ -45,7 +45,7 @@ If you find this package useful, please cite as:
 ```bibtex
 @article{scharf2022torchtime,
   title={PyTorch Time: Bringing Deep Learning to Time Series Classification},
-  author={Vincent Scharf and Paul Gerhard Ploeger},
+  author={Vincent Scharf},
   url={https://github.com/VincentSch4rf/torchtime},
   year={2022}
 }

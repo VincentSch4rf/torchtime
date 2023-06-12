@@ -78,7 +78,7 @@ Citing torchtime
 
 If you find torchtime useful, please cite the following paper:
 
-- Scharf, Vincent, Ploeger, Paul Gerhard (2022).
+- Scharf, Vincent(2022).
   PyTorch Time: Bringing Deep Learning to Time Series Classification.
 
 
@@ -88,7 +88,7 @@ In BibTeX format:
 
     @article{scharf2022torchtime,
       title={PyTorch Time: Bringing Deep Learning to Time Series Classification},
-      author={Vincent Scharf and Paul Gerhard Ploeger},
+      author={Vincent Scharf},
       url={https://github.com/VincentSch4rf/torchtime},
       year={2022}
     }
