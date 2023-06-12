@@ -20,6 +20,14 @@ model implementations and application components.
    :hidden:
 
    installation
+   get-started
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+   :hidden:
+
+   tutorials/classification_tutorial
 
 .. toctree::
    :maxdepth: 1

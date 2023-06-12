@@ -173,13 +173,13 @@ else:
 #
 # https://stackoverflow.com/a/33845358/1106930
 #
-html_context = {"version_stable": "2.0.1"}
+html_context = {"version_stable": "0.1.0"}
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = [
-    "*/index.rst",
+    # "*/index.rst",
     "tutorials/*.md5",
     "tutorials/*.py",
     "tutorials/*.ipynb",
@@ -200,7 +200,7 @@ todo_include_todos = True
 html_theme = "pytorchtime_sphinx_theme"
 html_theme_path = [pytorchtime_sphinx_theme.get_html_theme_path()]
 
-# html_favicon = "_static/img/favicon.ico"
+html_favicon = "_static/img/logo-icon.svg"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
