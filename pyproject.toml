@@ -1,28 +1,10 @@
-[project]
-name = "torchtime"
-version = "0.0.1"
-authors = [
-  { name="Vincent Scharf", email="vincent.scharf@smail.inf.h-brs.de" },
-]
-description = "A PyTorch Library for Time Series Classification"
-readme = "README.rst"
-license = { file="LICENSE" }
-requires-python = ">=3.9"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-]
-dynamic = ["dependencies"]
+[tool.usort]
 
-[project.urls]
-"Homepage" = "https://github.com/VincentSch4rf/torchtime"
-"Bug Tracker" = "https://github.com/VincentSch4rf/torchtime/issues"
+first_party_detection = false
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+[tool.black]
 
-[options]
-install_requires = "importlib-metadata ~= 1.0 ; python_version < '3.10'"
+line-length = 120
+target-version = ["py38"]
 
-[tool.setuptools.packages.find]
-exclude = [".test"]
+[tool.ufmt]
