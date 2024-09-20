@@ -13,13 +13,16 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 import atexit
-import os
 import ctypes
+import os
 import platform
+import re
+import subprocess
 import tempfile
+from enum import Enum
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
 
 DLL = None  # module variable accessible to other classes
@@ -37,7 +40,7 @@ class DWError(RuntimeError):
               "file already in use", "d7d file corrupt", "memory allocation",
               "creating uncompressed file", "extracting data",
               "opening uncompressed file")
-
+    
     def __init__(self, value):
         super(DWError, self).__init__(self.errors[value])
 
@@ -48,10 +51,10 @@ class DWInfo(ctypes.Structure):
     _fields_ = [("sample_rate", ctypes.c_double),
                 ("_start_store_time", ctypes.c_double),
                 ("duration", ctypes.c_double)]
-
+    
     def __str__(self):
         return "{0.start_store_time} {0.sample_rate} Hz {0.duration} s".format(self)
-
+    
     @property
     def start_store_time(self):
         """Return start_store_time in Python datetime format"""
@@ -66,12 +69,12 @@ class DWEvent(ctypes.Structure):
     _fields_ = [("event_type", ctypes.c_int),
                 ("time_stamp", ctypes.c_double),
                 ("_event_text", ctypes.c_char * 200)]
-
+    
     @property
     def event_text(self):
         """Readable description of the event"""
         return self._event_text.decode(encoding=encoding)
-
+    
     def __str__(self):
         return "{0.time_stamp} {0.event_text}".format(self)
 
@@ -82,17 +85,17 @@ class DWArrayInfo(ctypes.Structure):
                 ("_name", ctypes.c_char * 100),
                 ("_unit", ctypes.c_char * 20),
                 ("size", ctypes.c_int)]
-
+    
     @property
     def name(self):
         """An idenfitying name of the array"""
         return self._name.decode(encoding=encoding)
-
+    
     @property
     def unit(self):
         """The unit of measurement used by the array"""
         return self._unit.decode(encoding=encoding)
-
+    
     def __str__(self):
         return "DWArrayInfo index={0.index} name='{0.name}' unit='{0.unit}' size={0.size}".format(self)
 
@@ -107,22 +110,22 @@ class DWChannel(ctypes.Structure):
                 ("color", ctypes.c_uint),
                 ("array_size", ctypes.c_int),
                 ("data_type", ctypes.c_int)]
-
+    
     @property
     def name(self):
         """An idenfitying name of the channel"""
         return self._name.decode(encoding=encoding)
-
+    
     @property
     def unit(self):
         """The unit of measurement used by the channel"""
         return self._unit.decode(encoding=encoding)
-
+    
     @property
     def description(self):
         """A short explanation of what the channel measures"""
         return self._description.decode(encoding=encoding)
-
+    
     @property
     def number_of_samples(self):
         count = DLL.DWGetScaledSamplesCount(self.index)
@@ -130,7 +133,7 @@ class DWChannel(ctypes.Structure):
             raise IndexError('DWGetScaledSamplesCount({})={} should be non-negative'.format(
                 self.index, count))
         return count
-
+    
     def _chan_prop_int(self, chan_prop):
         count = ctypes.c_int(ctypes.sizeof(ctypes.c_int))
         stat = DLL.DWGetChannelProps(
@@ -139,7 +142,7 @@ class DWChannel(ctypes.Structure):
         if stat:
             raise DWError(stat)
         return count
-
+    
     def _chan_prop_str(self, chan_prop, chan_prop_len):
         len_str = self._chan_prop_int(chan_prop_len)
         p_buff = ctypes.create_string_buffer(len_str.value)
@@ -149,30 +152,30 @@ class DWChannel(ctypes.Structure):
         if stat:
             raise DWError(stat)
         return p_buff.value.decode(encoding=encoding)
-
+    
     @property
     def channel_type(self):
         return self._chan_prop_int(DWChannelProps.DW_CH_TYPE).value
-
+    
     @property
     def channel_index(self):
         return self._chan_prop_str(DWChannelProps.DW_CH_INDEX,
                                    DWChannelProps.DW_CH_INDEX_LEN)
-
+    
     @property
     def channel_xml(self):
         return self._chan_prop_str(DWChannelProps.DW_CH_XML,
                                    DWChannelProps.DW_CH_XML_LEN)
-
+    
     @property
     def long_name(self):
         return self._chan_prop_str(DWChannelProps.DW_CH_LONGNAME,
                                    DWChannelProps.DW_CH_LONGNAME_LEN)
-
+    
     @property
     def channel_scale(self):
         return self._chan_prop_int(DWChannelProps.DW_CH_SCALE).value
-
+    
     @property
     def arrayInfo(self):
         """Return list of array info axes for this channel"""
@@ -187,10 +190,10 @@ class DWChannel(ctypes.Structure):
         if stat:
             raise DWError(stat)
         return axes
-
+    
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
-
+    
     def scaled(self, arrayIndex=0):
         """Load and return full speed data as pd Series"""
         if not 0 <= arrayIndex < self.array_size:
@@ -204,7 +207,7 @@ class DWChannel(ctypes.Structure):
             raise DWError(stat)
         time, ix = np.unique(time, return_index=True)  # use unique times
         return data.reshape(count, self.array_size)[ix, arrayIndex], time
-
+    
     def dataframe(self):
         """Load and return full speed channel data as pd Dataframe"""
         count = self.number_of_samples
@@ -214,7 +217,7 @@ class DWChannel(ctypes.Structure):
                                       data.ctypes, time.ctypes)
         if stat:
             raise DWError(stat)
-
+        
         columns = []
         if 1 == self.array_size:
             columns.append(self.name)
@@ -234,13 +237,13 @@ class DWChannel(ctypes.Structure):
                         self.name,
                         axis.name,
                         text_.value.decode(encoding=encoding)]))
-
+        
         time, ix = np.unique(time, return_index=True)  # use unique times
         return pd.DataFrame(
             data=data.reshape(count, self.array_size)[ix, :],
             index=time,
             columns=columns)
-
+    
     def reduced(self):
         """Load reduced (averaged) data as pd DataFrame"""
         count = ctypes.c_int()
@@ -249,7 +252,7 @@ class DWChannel(ctypes.Structure):
                                            ctypes.byref(count), ctypes.byref(block_size))
         if stat:
             raise DWError(stat)
-
+        
         # Define np structured data type to hold DWReducedValue
         reducedDtype = np.dtype([
             ('time_stamp', np.double),
@@ -258,15 +261,15 @@ class DWChannel(ctypes.Structure):
             ('max', np.double),
             ('rms', np.double)
         ])
-
+        
         # Allocate memory and retrieve data
         data = np.empty(count.value, dtype=reducedDtype)
         stat = DLL.DWGetReducedValues(self.index, 0, count, data.ctypes)
         if stat:
             raise DWError(stat)
-
+        
         return data, data['time_stamp']
-
+    
     def tensor(self, sample_rate: float, duration: float):
         data, time = self.scaled()
         n_samples = int(sample_rate * duration)
@@ -279,7 +282,7 @@ class DWChannel(ctypes.Structure):
         idx = torch.stack((idx, torch.zeros_like(idx)), dim=0)
         tensor = torch.sparse_coo_tensor(idx, data, size=(n_samples, 1))
         return tensor.to_dense()
-
+    
     def series(self):
         """Load and return timeseries of results for channel"""
         data, time = self.scaled()
@@ -292,7 +295,7 @@ class DWChannel(ctypes.Structure):
         else:
             series = pd.Series(data=data, index=time, name=self.name)
         return series
-
+    
     def series_generator(self, chunk_size, arrayIndex=0):
         """Generator yielding channel data as chunks of pd series
         :param chunk_size: length of chunked series
@@ -311,16 +314,16 @@ class DWChannel(ctypes.Structure):
                 data.ctypes, time.ctypes)
             if stat:
                 raise DWError(stat)
-
+            
             time, ix = np.unique(time[:chunk_size], return_index=True)
             yield pd.Series(
                 data=data.reshape(-1, self.array_size)[ix, arrayIndex],
                 index=time,
                 name=self.name)
-
+    
     def plot(self, *args, **kwargs):
         """Plot the data as a series"""
-
+        
         ax = self.series().plot(*args, **kwargs)
         ax.set_ylabel(self.unit)
         return ax
@@ -346,21 +349,21 @@ class DWChannelProps():
 
 class DWFile(Mapping):
     """Data file type mapping channel names their metadata"""
-
+    
     _readers = []  # Internal list of DWFile instances
-
+    
     def __init__(self, source=None):
         self.name = ''  # Name of the open file
         self.closed = True  # bool indicating the current state of the reader
         self.delete = False  # Whether to remove file when closed
-
+        
         self.readerID = len(self._readers)  # DWInit creates the first readerID 0
         if self.readerID > 0:  # Add reader only if this is not the first
             stat = DLL.DWAddReader()
             if stat:
                 raise DWError(stat)
         self._readers.append(self)
-
+        
         # Check for matching number of readers
         num_readers = ctypes.c_int()
         stat = DLL.DWGetNumReaders(ctypes.byref(num_readers))
@@ -368,22 +371,22 @@ class DWFile(Mapping):
             raise DWError(stat)
         if num_readers.value != len(self._readers):
             raise ('DWGetNumReaders={0} != {1}'.format(num_readers.value, len(self._readers)))
-
+        
         if source:
             self.open(source)  # If this fails then the instance is not constructed
-
-    def activate(self, verifyOpen=True):
+    
+    def activate(self, verify_open=True):
         """Set this DWFile instance as the active reader"""
-        if verifyOpen and self.closed:
+        if verify_open and self.closed:
             raise ValueError('I/O operation on closed file.')
         stat = DLL.DWSetActiveReader(self.readerID)
         if stat:
             raise DWError(stat)
-
+    
     def open(self, source):
         """Open the specified file and read channel metadata"""
         self.close()  # ensure any previous file has been closed
-        self.activate(verifyOpen=False)
+        self.activate(verify_open=False)
         try:
             if hasattr(source, 'read'):  # source is a file-like object
                 temp_fd, self.name = tempfile.mkstemp(suffix='.d7d')  # Create tempfile
@@ -393,14 +396,14 @@ class DWFile(Mapping):
             else:  # assume source is a str filename
                 self.name = source
                 self.delete = False
-
+            
             # Open the d7d file
             self.info = DWInfo()
             stat = DLL.DWOpenDataFile(self.name.encode(encoding=encoding), ctypes.byref(self.info))
             if stat:
                 raise DWError(stat)
             self.closed = False
-
+            
             # Read channel metadata
             nchannels = DLL.DWGetChannelListCount()
             self.channels = (DWChannel * nchannels)()
@@ -410,7 +413,7 @@ class DWFile(Mapping):
         except:
             self.close()  # if open() fails then the file should be closed
             raise
-
+    
     @property
     def header(self):
         """Read file header section"""
@@ -418,8 +421,8 @@ class DWFile(Mapping):
         h = dict()
         name_ = ctypes.create_string_buffer(100)
         text_ = ctypes.create_string_buffer(200)
-        nHeaders = DLL.DWGetHeaderEntryCount()
-        for i in range(nHeaders):
+        n_headers = DLL.DWGetHeaderEntryCount()
+        for i in range(n_headers):
             stat = DLL.DWGetHeaderEntryTextF(i, text_, len(text_))
             if stat:
                 raise DWError(stat)
@@ -431,7 +434,7 @@ class DWFile(Mapping):
                     raise DWError(stat)
                 h[name_.value.decode(encoding=encoding)] = text
         return h
-
+    
     def export_header(self, file_name):
         """Export header as .xml file"""
         self.activate()
@@ -439,16 +442,16 @@ class DWFile(Mapping):
         if stat:
             raise DWError(stat)
         return 0
-
+    
     def events(self):
         """Load and return timeseries of file events"""
         self.activate()
         time_stamp = []
         event_type = []
         event_text = []
-        nEvents = DLL.DWGetEventListCount()
-        if nEvents:
-            events_ = (DWEvent * nEvents)()
+        n_events = DLL.DWGetEventListCount()
+        if n_events:
+            events_ = (DWEvent * n_events)()
             stat = DLL.DWGetEventList(events_)
             if stat:
                 raise DWError(stat)
@@ -459,7 +462,7 @@ class DWFile(Mapping):
         return pd.DataFrame(
             data={'type': event_type, 'text': event_text},
             index=time_stamp)
-
+    
     def dataframe(self, channels=None):
         """Return dataframe of selected series"""
         self.activate()
@@ -467,7 +470,7 @@ class DWFile(Mapping):
             # Return dataframe of ALL channels by default
             channels = self.keys()
         return pd.DataFrame({k: self[k].series() for k in channels})
-
+    
     def tensor(self, channels=None):
         self.activate()
         if not channels:
@@ -475,7 +478,7 @@ class DWFile(Mapping):
         tensors = [self[k].tensor(self.info.sample_rate, self.info.duration) for k in channels if
                    self[k].number_of_samples > 1]
         return torch.squeeze(torch.stack(tensors))
-
+    
     def close(self):
         """Close the d7d file and delete it if temporary"""
         if not self.closed:
@@ -487,56 +490,56 @@ class DWFile(Mapping):
         if self.delete:
             os.remove(self.name)
             self.delete = False
-
+    
     def __len__(self):
         return len(self.channels)
-
+    
     def __getitem__(self, key):
         self.activate()
         for ch in self.channels:  # brute force lookup
             if ch.index == key or ch.name == key:
                 return ch
         raise KeyError(key)
-
+    
     def __iter__(self):
         for ch in self.channels:
             yield ch.name
-
+    
     def __str__(self):
         return self.name
-
+    
     def __enter__(self):
         """Used to maintain file in context"""
         return self
-
+    
     def __exit__(self, exception_type, exception_value, traceback):
         """Close file when it goes out of context"""
         self.close()
 
 
 # Define module methods
-def loadDLL(dllName=''):
+def load_dll(libname=''):
     global DLL
-    if not dllName:
+    if not libname:
         # Determine appropriate library to load
-        dllName = os.path.join(os.path.dirname(__file__),
+        libname = os.path.join(os.path.dirname(__file__),
                                "DWDataReaderLib")
         if platform.architecture()[0] == '64bit':
-            dllName += "64"
+            libname += "64"
         if platform.system() == 'Linux':
-            dllName += ".so"
-    DLL = ctypes.cdll.LoadLibrary(dllName)
+            libname += ".so"
+    DLL = ctypes.cdll.LoadLibrary(libname)
     stat = DLL.DWInit()
     if stat:
         raise DWError(stat)
-    atexit.register(unloadDLL)
+    atexit.register(unload_dll)
 
 
-def getVersion():
+def get_version():
     return DLL.DWGetVersion()
 
 
-def unloadDLL():
+def unload_dll():
     global DLL
     DLL.DWDeInit()
     DLL = None  # Release reference to DLL

@@ -6,7 +6,7 @@ import torch
 from . import TimeSeriesDataset
 from ..io import dwsoft
 
-dwsoft.loadDLL()
+dwsoft.load_dll()
 
 
 class PatchedDEWESoftDataset(TimeSeriesDataset):
