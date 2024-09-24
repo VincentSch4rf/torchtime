@@ -8,6 +8,7 @@ authors = [
     { name = "Vincent Scharf", email = "vincent.scharf@smail.inf.h-brs.de" }
 ]
 description = "A time series package for PyTorch"
+readme = "README.md"
 keywords = ["python", "torchtime"]
 classifiers = [
     "Environment :: Plugins",
@@ -35,7 +36,7 @@ dependencies = [
     "tqdm",
     "pandas",
 ]
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 test = [
@@ -57,7 +58,6 @@ torchtime = ["*.txt", "*.rst", "config.ini"]
 
 [tool.setuptools.dynamic]
 version = { attr = "torchtime.__version__" }
-readme = { file = ["README.md"] }
 
 [tool.pytest.ini_options]
 addopts = [
