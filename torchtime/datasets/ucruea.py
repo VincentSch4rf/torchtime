@@ -37,7 +37,7 @@ class UCR(TimeSeriesDataset):
     _repr_indent = 4
 
     mirrors = [
-        'http://www.timeseriesclassification.com/Downloads/'
+        'http://timeseriesclassification.com/aeon-toolkit/'
     ]
 
     univariate = [
