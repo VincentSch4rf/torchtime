@@ -27,13 +27,13 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
+    "torch==2.4.*",
+    "pytorch-lightning==2.4.*",
     "requests",
     "typing_extensions",
     "numpy",
-    "torch",
     "tqdm",
     "pandas",
-    "pytorch-lightning",
 ]
 dynamic = ["version", "readme"]
 

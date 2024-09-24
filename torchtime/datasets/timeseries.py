@@ -35,7 +35,7 @@ class TimeSeriesDataset(Dataset):
             target_transform: Optional[Callable] = None,
     ) -> None:
         torch._C._log_api_usage_once(f"torchtime.datasets.{self.__class__.__name__}")
-        if isinstance(root, torch._six.string_classes):
+        if isinstance(root, str):
             root = os.path.expanduser(root)
         self.root = root
 

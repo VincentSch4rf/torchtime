@@ -17,10 +17,10 @@ class TsTagValuePattern(Enum):
     """
     Enumeration holding the known `.ts` file headers tag value types in the form of regex expressions.
     """
-    BOOLEAN = re.compile('(?:tru|fals)e')
-    ANY_CONNECTED_STRING = re.compile('\\w+')
-    INTEGER_NUMBER = re.compile('\\d+')
-    CLASS_LABEL = re.compile('(?:tru|fals)e(?:(?<=true)((?: [^\s]+)+)|(?<=false))')
+    BOOLEAN = re.compile(r"(?:tru|fals)e")
+    ANY_CONNECTED_STRING = re.compile(r"\w+")
+    INTEGER_NUMBER = re.compile(r"\d+")
+    CLASS_LABEL = re.compile(r"(?:tru|fals)e(?:(?<=true)((?: [^\s]+)+)|(?<=false))")
     # ((?:tru|fals)e)(?(?<=true)((?: \w+)+))(?=\s)
 
 
@@ -28,14 +28,14 @@ class TsTag(str, Enum):
     """
     Enumeration holding the names of the known `.ts` file tag names.
     """
-    PROBLEM_NAME = 'problemName'
-    TIMESTAMPS = 'timeStamps'
-    MISSING = 'missing'
-    EQUAL_LENGTH = 'equalLength'
-    SERIES_LENGTH = 'seriesLength'
-    CLASS_LABEL = 'classLabel'
-    UNIVARIATE = 'univariate'
-    DIMENSIONS = 'dimensions'
+    PROBLEM_NAME = "problemName"
+    TIMESTAMPS = "timeStamps"
+    MISSING = "missing"
+    EQUAL_LENGTH = "equalLength"
+    SERIES_LENGTH = "seriesLength"
+    CLASS_LABEL = "classLabel"
+    UNIVARIATE = "univariate"
+    DIMENSIONS = "dimensions"
 
 
 class TSFileLoader:
@@ -156,7 +156,7 @@ class TSFileLoader:
                 f"Line number {self.line_number} contains an empty tag!"
             )
 
-        tokens = line.split(" ", maxsplit=1)
+        tokens = [token.strip() for token in line.split(" ", maxsplit=1)]
         token_len = len(tokens)
 
         if token_len == 1:
@@ -191,7 +191,7 @@ class TSFileLoader:
             List[str]: If the value is of type CLASS_LABEL. Returns a list of space separated string class labels.
         """
         if value_type == TsTagValuePattern.BOOLEAN:
-            return value == 'true'
+            return value == "true"
         if value_type == TsTagValuePattern.ANY_CONNECTED_STRING:
             return value.strip()
         if value_type == TsTagValuePattern.CLASS_LABEL:
