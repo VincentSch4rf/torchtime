@@ -3,7 +3,7 @@ torchtime: time series library for PyTorch
 [![Downloads](https://static.pepy.tech/badge/pytorchtime)](https://pypi.org/project/pytorchtime)
 [![Documentation](https://img.shields.io/badge/dynamic/json.svg?label=docs&url=https%3A%2F%2Fpypi.org%2Fpypi%2Fpytorchtime%2Fjson&query=%24.info.version&colorB=brightgreen&prefix=v)](https://pytorchtime.com/docs/stable)
 
-![Torchtime Logo](docs/source/_static/img/logo-dark.svg)
+![Torchtime Logo](https://github.com/VincentSch4rf/torchtime/raw/main/docs/source/_static/img/logo-dark.svg)
 
 --------------------------------------------------------------------------------
 
