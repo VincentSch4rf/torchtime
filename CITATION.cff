@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+references:
+    - type: software
+    authors:
+    - family-names: "Scharf"
+      given-names: "Vincent"
+      affiliation: Hochschule Bonn-Rhein-Sieg, Dept. of Computer Science
+      email: vincent.scharf@smail.inf.h-brs.de
+      orcid: "https://orcid.org/0000-0001-7229-9898"
+    title: "torchtime"
+    doi: 10.5281/zenodo.13832394
+    repository-code: https://github.com/VincentSch4rf/torchtime
+    license: BSD 2-Clause License
+    license-url: https://opensource.org/license/bsd-2-clause
+    year: 2022
+    url: "https://pytorchtime.com"

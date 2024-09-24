@@ -1,5 +1,6 @@
 torchtime: time series library for PyTorch
 ==========================================
+[![DOI](https://zenodo.org/badge/459668641.svg)](https://zenodo.org/doi/10.5281/zenodo.13832394)
 [![Downloads](https://static.pepy.tech/badge/pytorchtime)](https://pypi.org/project/pytorchtime)
 [![Documentation](https://img.shields.io/badge/dynamic/json.svg?label=docs&url=https%3A%2F%2Fpypi.org%2Fpypi%2Fpytorchtime%2Fjson&query=%24.info.version&colorB=brightgreen&prefix=v)](https://pytorchtime.com/docs/stable)
 
@@ -43,11 +44,13 @@ Citation
 If you find this package useful, please cite as:
 
 ```bibtex
-@article{scharf2022torchtime,
-  title={PyTorch Time: Bringing Deep Learning to Time Series Classification},
-  author={Vincent Scharf},
-  url={https://github.com/VincentSch4rf/torchtime},
-  year={2022}
+@software{scharf2024torchtime,
+  author       = {Vincent Scharf},
+  title        = {VincentSch4rf/torchtime},
+  year         = 2022,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.13832394},
+  url          = {https://github.com/VincentSch4rf/torchtime}
 }
 ```
 
