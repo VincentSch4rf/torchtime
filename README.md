@@ -46,7 +46,7 @@ If you find this package useful, please cite as:
 ```bibtex
 @software{scharf2024torchtime,
   author       = {Vincent Scharf},
-  title        = {VincentSch4rf/torchtime},
+  title        = {torchtime},
   year         = 2022,
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.13832394},

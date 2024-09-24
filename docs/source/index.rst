@@ -78,17 +78,18 @@ Citing torchtime
 
 If you find torchtime useful, please cite the following paper:
 
-- Scharf, Vincent(2022).
-  PyTorch Time: Bringing Deep Learning to Time Series Classification.
+- Scharf, V. (2022). torchtime (0.1.2). Zenodo. https://doi.org/10.5281/zenodo.13832395
 
 
 In BibTeX format:
 
 .. code-block:: bibtex
 
-    @article{scharf2022torchtime,
-      title={PyTorch Time: Bringing Deep Learning to Time Series Classification},
-      author={Vincent Scharf},
-      url={https://github.com/VincentSch4rf/torchtime},
-      year={2022}
+    @software{scharf2024torchtime,
+      author       = {Vincent Scharf},
+      title        = {torchtime},
+      year         = 2022,
+      publisher    = {Zenodo},
+      doi          = {10.5281/zenodo.13832394},
+      url          = {https://github.com/VincentSch4rf/torchtime}
     }
