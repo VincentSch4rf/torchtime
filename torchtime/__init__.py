@@ -1,7 +1,4 @@
-try:
-    from .version import __version__, git_version
-except ImportError:
-    pass
+__version__ = "0.1.1"
 
 from torchtime import utils
 from torchtime import exceptions
