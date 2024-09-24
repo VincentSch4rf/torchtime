@@ -207,12 +207,13 @@ html_favicon = "_static/img/logo-icon.svg"
 # documentation.
 #
 html_theme_options = {
-    "pytorch_project": "audio",
+    "pytorch_project": "time",
     "collapse_navigation": False,
     "display_version": True,
     "logo_only": True,
     "navigation_with_keys": True,
     # "analytics_id": "UA-117752657-2",
+    "favicon": "images/logo-icon.svg"
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
