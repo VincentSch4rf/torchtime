@@ -1,5 +1,6 @@
 import csv
 import os
+from abc import abstractmethod
 from typing import Tuple, Any, Callable, List, Optional, Union
 
 import torch
@@ -27,6 +28,16 @@ class TimeSeriesDataset(Dataset):
     """
     _repr_indent = 4
 
+    @property
+    @abstractmethod
+    def dim(self):
+        pass
+
+    @property
+    @abstractmethod
+    def classes(self):
+        pass
+
     def __init__(
             self,
             root: str,
@@ -48,6 +59,7 @@ class TimeSeriesDataset(Dataset):
             transforms = StandardTransform(transform, target_transform)
         self.transforms = transforms
 
+    @abstractmethod
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         """
         Args:
@@ -58,6 +70,7 @@ class TimeSeriesDataset(Dataset):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def __len__(self) -> int:
         raise NotImplementedError
 

@@ -20,7 +20,7 @@ class TsTagValuePattern(Enum):
     BOOLEAN = re.compile(r"(?:tru|fals)e")
     ANY_CONNECTED_STRING = re.compile(r"\w+")
     INTEGER_NUMBER = re.compile(r"\d+")
-    CLASS_LABEL = re.compile(r"(?:tru|fals)e(?:(?<=true)((?: [^\s]+)+)|(?<=false))")
+    CLASS_LABEL = re.compile(r"(?:tru|fals)e(?:(?<=true)((?: \S+)+)|(?<=false))")
     # ((?:tru|fals)e)(?(?<=true)((?: \w+)+))(?=\s)
 
 
