@@ -16,10 +16,7 @@ import atexit
 import ctypes
 import os
 import platform
-import re
-import subprocess
 import tempfile
-from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -194,10 +191,10 @@ class DWChannel(ctypes.Structure):
     def __str__(self):
         return "{0.name} ({0.unit}) {0.description}".format(self)
     
-    def scaled(self, arrayIndex=0):
+    def scaled(self, array_index=0):
         """Load and return full speed data as pd Series"""
-        if not 0 <= arrayIndex < self.array_size:
-            raise IndexError('arrayIndex is out of range')
+        if not 0 <= array_index < self.array_size:
+            raise IndexError('array_index is out of range')
         count = self.number_of_samples
         data = np.empty(count * self.array_size, dtype=np.double)
         time = np.empty(count, dtype=np.double)
@@ -206,7 +203,7 @@ class DWChannel(ctypes.Structure):
         if stat:
             raise DWError(stat)
         time, ix = np.unique(time, return_index=True)  # use unique times
-        return data.reshape(count, self.array_size)[ix, arrayIndex], time
+        return data.reshape(count, self.array_size)[ix, array_index], time
     
     def dataframe(self):
         """Load and return full speed channel data as pd Dataframe"""
@@ -254,7 +251,7 @@ class DWChannel(ctypes.Structure):
             raise DWError(stat)
         
         # Define np structured data type to hold DWReducedValue
-        reducedDtype = np.dtype([
+        reduced_dtype = np.dtype([
             ('time_stamp', np.double),
             ('ave', np.double),
             ('min', np.double),
@@ -263,7 +260,7 @@ class DWChannel(ctypes.Structure):
         ])
         
         # Allocate memory and retrieve data
-        data = np.empty(count.value, dtype=reducedDtype)
+        data = np.empty(count.value, dtype=reduced_dtype)
         stat = DLL.DWGetReducedValues(self.index, 0, count, data.ctypes)
         if stat:
             raise DWError(stat)
@@ -296,10 +293,12 @@ class DWChannel(ctypes.Structure):
             series = pd.Series(data=data, index=time, name=self.name)
         return series
     
-    def series_generator(self, chunk_size, arrayIndex=0):
+    def series_generator(self, chunk_size, array_index=0):
         """Generator yielding channel data as chunks of pd series
         :param chunk_size: length of chunked series
         :type chunk_size: int
+        :param array_index: index of feature to return
+        :type array_index: int
         :returns: pd.Series
         """
         count = self.number_of_samples
@@ -317,7 +316,7 @@ class DWChannel(ctypes.Structure):
             
             time, ix = np.unique(time[:chunk_size], return_index=True)
             yield pd.Series(
-                data=data.reshape(-1, self.array_size)[ix, arrayIndex],
+                data=data.reshape(-1, self.array_size)[ix, array_index],
                 index=time,
                 name=self.name)
     
@@ -418,7 +417,7 @@ class DWFile(Mapping):
     def header(self):
         """Read file header section"""
         self.activate()
-        h = dict()
+        h = {}
         name_ = ctypes.create_string_buffer(100)
         text_ = ctypes.create_string_buffer(200)
         n_headers = DLL.DWGetHeaderEntryCount()

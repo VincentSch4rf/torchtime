@@ -17,10 +17,10 @@ class TsTagValuePattern(Enum):
     """
     Enumeration holding the known `.ts` file headers tag value types in the form of regex expressions.
     """
-    BOOLEAN = re.compile('(?:tru|fals)e')
-    ANY_CONNECTED_STRING = re.compile('\\w+')
-    INTEGER_NUMBER = re.compile('\\d+')
-    CLASS_LABEL = re.compile('(?:tru|fals)e(?:(?<=true)((?: [^\s]+)+)|(?<=false))')
+    BOOLEAN = re.compile(r'(?:tru|fals)e')
+    ANY_CONNECTED_STRING = re.compile(r'\w+')
+    INTEGER_NUMBER = re.compile(r'\d+')
+    CLASS_LABEL = re.compile(r'(?:tru|fals)e(?:(?<=true)((?: \S+)+)|(?<=false))')
     # ((?:tru|fals)e)(?(?<=true)((?: \w+)+))(?=\s)
 
 
